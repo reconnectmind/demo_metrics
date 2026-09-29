@@ -30,6 +30,64 @@ const secondaryValues = Object.fromEntries(
   ]),
 ) as Record<SecondaryControlId, number>;
 let selectedMetric: MetricId = "rmssd";
+let formulasOpen = false;
+
+const FORMULA_REFERENCE = [
+  {
+    id: "rmssd",
+    name: "RMSSD",
+    formula: "√ [ Σ(RRᵢ₊₁ − RRᵢ)² / (N − 1) ]",
+    note: "Среднеквадратичное изменение соседних NN-интервалов.",
+  },
+  {
+    id: "amo",
+    name: "AMo",
+    formula: "100 × Nмодального столбца / N",
+    note: "Доля интервалов в самом заполненном столбце шириной 50 мс.",
+  },
+  {
+    id: "mo",
+    name: "Mo",
+    formula: "центр arg max Nстолбца(RR)",
+    note: "Центр наиболее заполненного 50-мс столбца гистограммы.",
+  },
+  {
+    id: "sat",
+    name: "SAT Каплана",
+    formula: "0,1 × AMo × Mo / СКОП",
+    note: "СКОП = RMSSD / 2; Mo и СКОП используются в одинаковых единицах.",
+  },
+  {
+    id: "si",
+    name: "ИН Баевского",
+    formula: "AMo / [2 × Mo(с) × (RRmax − RRmin)(с)]",
+    note: "В знаменателе — полный размах NN-интервалов.",
+  },
+  {
+    id: "sdnn",
+    name: "SDNN",
+    formula: "√ [ Σ(RRᵢ − RR̄)² / (N − 1) ]",
+    note: "Стандартное отклонение всех NN-интервалов.",
+  },
+  {
+    id: "pnn50",
+    name: "pNN50",
+    formula: "100 × N(|RRᵢ₊₁ − RRᵢ| > 50 мс) / (N − 1)",
+    note: "Доля соседних пар, различающихся более чем на 50 мс.",
+  },
+  {
+    id: "poincare",
+    name: "SD1 / SD2",
+    formula: "SD1 = RMSSD / √2;  SD2 = √(2·SDNN² − RMSSD²/2)",
+    note: "Поперечная и продольная оси облака Пуанкаре.",
+  },
+  {
+    id: "spectrum",
+    name: "LF / HF",
+    formula: "ΣP(0,04–0,15 Гц) / ΣP(0,15–0,40 Гц)",
+    note: "Отношение мощности низко- и высокочастотного диапазонов.",
+  },
+] as const;
 
 const format = (value: number, digits = 0) =>
   new Intl.NumberFormat("ru-RU", {
@@ -332,15 +390,47 @@ function render() {
   document.title = `${definition.short} · лаборатория метрик`;
 
   app.innerHTML = `
-    <header class="topbar">
+    <header class="topbar" ${formulasOpen ? 'inert aria-hidden="true"' : ""}>
       <a class="brand" href="#" aria-label="Лаборатория метрик, начало">
         <span class="brand-mark"><i></i><i></i><i></i></span>
         <span>Пульс <b>/ лаборатория метрик</b></span>
       </a>
-      <div class="live-badge"><span></span> синтетические данные</div>
+      <div class="topbar-actions">
+        <button class="formula-button" type="button" aria-haspopup="dialog">
+          <span>ƒ</span> Формулы
+        </button>
+        <div class="live-badge"><span></span> синтетические данные</div>
+      </div>
     </header>
 
-    <main>
+    ${
+      formulasOpen
+        ? `<div class="formula-backdrop" role="presentation">
+            <section class="formula-dialog" role="dialog" aria-modal="true" aria-labelledby="formula-title">
+              <header>
+                <div>
+                  <p class="eyebrow">Справочник</p>
+                  <h2 id="formula-title">Формулы расчёта</h2>
+                </div>
+                <button class="formula-close" type="button" aria-label="Закрыть формулы">×</button>
+              </header>
+              <div class="formula-grid">
+                ${FORMULA_REFERENCE.map(
+                  (item) => `
+                    <article class="formula-item ${item.id === selectedMetric ? "is-active" : ""}">
+                      <span>${item.name}</span>
+                      <code>${item.formula}</code>
+                      <p>${item.note}</p>
+                    </article>`,
+                ).join("")}
+              </div>
+              <p class="formula-footnote">RR обозначает очищенные NN-интервалы. Перед расчётом реальных данных необходимы детекция и коррекция артефактов.</p>
+            </section>
+          </div>`
+        : ""
+    }
+
+    <main ${formulasOpen ? 'inert aria-hidden="true"' : ""}>
       <section class="intro">
         <div>
           <p class="eyebrow">Интерактивный атлас HRV</p>
@@ -524,6 +614,20 @@ function render() {
     </main>
   `;
 
+  app.querySelector<HTMLButtonElement>(".formula-button")?.addEventListener("click", () => {
+    formulasOpen = true;
+    render();
+  });
+  app.querySelector<HTMLButtonElement>(".formula-close")?.addEventListener("click", () => {
+    formulasOpen = false;
+    render();
+  });
+  app.querySelector<HTMLElement>(".formula-backdrop")?.addEventListener("click", (event) => {
+    if (event.target === event.currentTarget) {
+      formulasOpen = false;
+      render();
+    }
+  });
   app.querySelectorAll<HTMLElement>("[data-metric]").forEach((button) => {
     button.addEventListener("click", () => {
       selectedMetric = button.dataset.metric as MetricId;

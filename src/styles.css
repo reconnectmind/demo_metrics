@@ -112,6 +112,157 @@ button {
   box-shadow: 0 0 0 5px rgba(72, 168, 135, 0.12);
 }
 
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+}
+
+.formula-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border: 1px solid var(--line);
+  border-radius: 100px;
+  color: var(--muted);
+  cursor: pointer;
+  background: rgba(249, 248, 243, 0.72);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.formula-button:hover {
+  border-color: var(--accent);
+  color: var(--ink);
+}
+
+.formula-button span {
+  color: var(--accent);
+  font-family: Georgia, serif;
+  font-size: 14px;
+  font-style: italic;
+  line-height: 1;
+}
+
+.formula-backdrop {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(15, 24, 29, 0.62);
+  backdrop-filter: blur(8px);
+}
+
+.formula-dialog {
+  width: min(980px, 100%);
+  max-height: calc(100dvh - 36px);
+  overflow: auto;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: 20px;
+  background: var(--paper);
+  box-shadow: 0 28px 80px rgba(10, 18, 23, 0.3);
+}
+
+.formula-dialog > header {
+  position: sticky;
+  z-index: 1;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--paper) 94%, transparent);
+  backdrop-filter: blur(10px);
+}
+
+.formula-dialog .eyebrow {
+  margin-bottom: 4px;
+}
+
+.formula-dialog h2 {
+  font-size: 26px;
+}
+
+.formula-close {
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  color: var(--muted);
+  cursor: pointer;
+  background: transparent;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.formula-close:hover {
+  border-color: var(--accent);
+  color: var(--ink);
+}
+
+.formula-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  padding: 14px;
+}
+
+.formula-item {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.34);
+}
+
+.formula-item.is-active {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.formula-item > span {
+  display: block;
+  margin-bottom: 9px;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.formula-item code {
+  display: block;
+  overflow-wrap: anywhere;
+  color: var(--ink);
+  font-family: "Manrope", sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.formula-item p,
+.formula-footnote {
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+.formula-item p {
+  margin: 9px 0 0;
+}
+
+.formula-footnote {
+  margin: 0;
+  padding: 0 28px 18px;
+}
+
 main {
   width: calc(100% - 24px);
   margin: 0 auto;
@@ -844,6 +995,10 @@ footer > span {
 }
 
 @media (max-width: 900px) {
+  .formula-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .topbar,
   main {
     width: calc(100% - 24px);
@@ -906,6 +1061,28 @@ footer > span {
 }
 
 @media (max-width: 560px) {
+  .formula-backdrop {
+    padding: 8px;
+  }
+
+  .formula-dialog {
+    max-height: calc(100dvh - 16px);
+    border-radius: 14px;
+  }
+
+  .formula-dialog > header {
+    padding: 15px 16px 12px;
+  }
+
+  .formula-grid {
+    grid-template-columns: 1fr;
+    padding: 8px;
+  }
+
+  .formula-item {
+    padding: 12px;
+  }
+
   .topbar,
   main {
     width: calc(100% - 24px);
