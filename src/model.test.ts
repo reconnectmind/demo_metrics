@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   calculateMetrics,
   generateHrv,
+  shuffleRrOrder,
   type GeneratorTargets,
 } from "./model";
 
@@ -105,5 +106,23 @@ describe("hybrid HRV generator", () => {
 
     expect(recalculated.sat).toBeCloseTo(result.metrics.sat, 8);
     expect(recalculated.si).not.toBeCloseTo(recalculated.sat, 1);
+  });
+
+  it("shuffling preserves the distribution but destroys temporal metrics", () => {
+    const result = generate({
+      primary: "rmssd",
+      primaryValue: 42,
+      secondary: { mo: 825, breathingRate: 14 },
+    });
+    const shuffled = shuffleRrOrder(result.rr);
+    const shuffledMetrics = calculateMetrics(shuffled);
+
+    expect([...shuffled].sort((a, b) => a - b)).toEqual(
+      [...result.rr].sort((a, b) => a - b),
+    );
+    expect(shuffledMetrics.mo).toBe(result.metrics.mo);
+    expect(shuffledMetrics.amo).toBe(result.metrics.amo);
+    expect(shuffledMetrics.range).toBeCloseTo(result.metrics.range, 10);
+    expect(Math.abs(shuffledMetrics.rmssd - result.metrics.rmssd)).toBeGreaterThan(3);
   });
 });

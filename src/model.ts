@@ -256,6 +256,16 @@ const noiseDeviation = Math.sqrt(
 );
 const noiseBasis = coloredNoise.map((value) => (value - noiseMean) / noiseDeviation);
 
+export function shuffleRrOrder(values: number[], seed = 0x5eed1234) {
+  const result = [...values];
+  const random = mulberry32(seed);
+  for (let index = result.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(random() * (index + 1));
+    [result[index], result[swapIndex]] = [result[swapIndex], result[index]];
+  }
+  return result;
+}
+
 const PARAM_BOUNDS: Record<keyof GeneratorParams, [number, number]> = {
   mo: [550, 1200],
   hfAmplitude: [0.5, 360],

@@ -3,9 +3,11 @@ import {
   CONTROL_DEFINITIONS,
   METRICS,
   SECONDARY_CONTROLS,
+  calculateMetrics,
   generateHrv,
   histogram,
   ppgSignal,
+  shuffleRrOrder,
   spectrum,
   type GeneratorResult,
   type HrvMetrics,
@@ -31,6 +33,7 @@ const secondaryValues = Object.fromEntries(
 ) as Record<SecondaryControlId, number>;
 let selectedMetric: MetricId = "rmssd";
 let formulasOpen = false;
+let orderShuffled = false;
 
 const FORMULA_REFERENCE = [
   {
@@ -363,12 +366,17 @@ function render() {
     primaryValue: values[selectedMetric],
     secondary,
   });
-  const { rr, metrics } = result;
+  const rr = orderShuffled ? shuffleRrOrder(result.rr) : result.rr;
+  const metrics = orderShuffled ? calculateMetrics(rr) : result.metrics;
+  const displayResult: GeneratorResult = orderShuffled
+    ? { ...result, rr, metrics, feasible: false }
+    : result;
   const actual = selectedValue(metrics, selectedMetric);
   const difference = Math.abs(actual - values[selectedMetric]);
   const tolerance = definition.step * 1.2;
-  const targetNote =
-    difference > tolerance
+  const targetNote = orderShuffled
+    ? "порядок перемешан"
+    : difference > tolerance
       ? `Синтезировано: ${format(actual, selectedMetric === "amo" ? 0 : 1)} ${definition.unit}`
       : `цель → ${format(actual, selectedMetric === "amo" ? 0 : 1)}`;
   const couplingText =
@@ -465,7 +473,7 @@ function render() {
                     <span class="control-label">${definition.short}</span>
                     <div class="target-value">${format(values[selectedMetric])}<small>${definition.unit}</small></div>
                   </div>
-                  <span class="target-note ${result.feasible ? "" : "target-note--warning"}">${targetNote}</span>
+                  <span class="target-note ${displayResult.feasible ? "" : "target-note--warning"}">${targetNote}</span>
                 </div>
                 <input
                   id="metric-slider"
@@ -486,13 +494,13 @@ function render() {
               <div class="secondary-controls">
                 <div class="secondary-heading">
                   <span>Связанные параметры</span>
-                  <small>${result.feasible ? "согласованы" : "компромисс"}</small>
+                  <small>${orderShuffled ? "порядок изменён" : displayResult.feasible ? "согласованы" : "компромисс"}</small>
                 </div>
                 ${activeControls
                   .map((id) => {
                     const control = CONTROL_DEFINITIONS[id];
                     const target = secondaryValues[id];
-                    const fact = secondaryActual(result, id);
+                    const fact = secondaryActual(displayResult, id);
                     const digits = id === "breathingRate" || id === "rmssd" ? 1 : 0;
                     return `
                       <label class="secondary-control">
@@ -592,7 +600,12 @@ function render() {
           <article class="chart-card graph-card">
             <div class="chart-title">
               <div><b>Диаграмма Пуанкаре</b></div>
-              <span>SD1 ${format(metrics.sd1, 1)} · SD2 ${format(metrics.sd2, 1)}</span>
+              <div class="chart-title-actions">
+                <span>SD1 ${format(metrics.sd1, 1)} · SD2 ${format(metrics.sd2, 1)}</span>
+                <button class="shuffle-button ${orderShuffled ? "is-active" : ""}" type="button">
+                  ${orderShuffled ? "Вернуть порядок" : "Перемешать RR"}
+                </button>
+              </div>
             </div>
             ${poincareChart(rr, metrics)}
           </article>
@@ -627,6 +640,10 @@ function render() {
       formulasOpen = false;
       render();
     }
+  });
+  app.querySelector<HTMLButtonElement>(".shuffle-button")?.addEventListener("click", () => {
+    orderShuffled = !orderShuffled;
+    render();
   });
   app.querySelectorAll<HTMLElement>("[data-metric]").forEach((button) => {
     button.addEventListener("click", () => {
